@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>SensorData API ile ASUA platformuna veri gönderme</title>
+    <script src="http://netigma.netcad.com.tr/SWE/ModulData/Component/SWE/js/ASUACEPSDK.js" type="text/javascript"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js" type="text/javascript"></script>
+</head>
+<style>
+    .item {
+        margin: 10px;
+    }
+</style>
+
+<body>
+    <h4>CEP API ile ASUA platformunda Kural Oluşturma</h4>
+    <div>
+        Kural Adı :
+        <input type="text" id="kuralAdi" placeholder="kural adı yazınız">
+    </div>
+    <div class="item">
+        Sensor Kimliği :
+        <select id="sensor_kimligi">
+            <option value="Sensor_1">Sensor_1</option>
+            <option value="Sensor_2">Sensor_2</option>
+            <option value="Sensor_3">Sensor_3</option>
+            <option value="Sensor_4">Sensor_4</option>
+        </select>
+    </div>
+    <div class="item">
+        Ölçülen Özellik :
+        <select id="ozellik_adi">
+            <option value="Sicaklik">Sicaklik</option>
+            <option value="Nem">Nem</option>
+            <option value="AracSayisi">AracSayisi</option>
+            <option value="KisiSayisi">KisiSayisi</option>
+        </select>
+    </div>
+    <div class="item">
+        Operator :
+        <select id="operator">
+            <option value="<">&lt</option>
+            <option value=">">&gt</option>
+            <option value="=">=</option>
+        </select>
+        Eşik Değeri :
+        <input type="number" id="deger">
+    </div>
+    <button class="item" id="kuralOlustur">Kural Oluştur</button>
+
+    <h4>CEP API ile kurala mail ile abone olma</h4>
+    <div class="item">
+        Mail adresi :
+        <input type="text" id="mailAdresi" placeholder="mail adresi giriniz">
+    </div class="item">
+    <button class="item" id="aboneOl" disabled>Abone Ol</button>
+
+    <script>
+
+        var apiClient = new ASUACEPSDK.ApiClient();
+
+        apiClient.basePath = "http://netigma.netcad.com.tr/cep/";
+        apiClient.authentications.Authorization.apiKey = "YOUR_API_KEY";
+
+        var StatementsApi = new ASUACEPSDK.StatementsApi(apiClient);//kural oluşturma, başlatma, durdurma, silme gibi operasyonlar için kullanılır
+        var SubscriptionApi = new ASUACEPSDK.SubscriptionApi(apiClient);//kurallara çeşitli yollar ile abone olma ve aboneliği başlatma, durdurma, silme gibi operasyonlar için kullanılır
+
+        $("#kuralOlustur").on("click", function () {
+            var kuralAdi = $("#kuralAdi").val();
+
+            var sensor = $("#sensor_kimligi").val();
+            var ozellik = $("#ozellik_adi").val();
+            var deger = $("#deger").val();
+            var operator = $("#operator").val();
+
+            //EPL dilinde kural cümlesi
+            //Buradaki ObservationEvent gelen sensör ölçümlerini temsil eder
+            //procedure sensör kimliği
+            //observedProperty ölçülen özellik
+            //numericValue ise sayısal ölçüm değerini temsil eder.
+            var kuralCumlesi = "Select * from ObservationEvent where procedure = '" + sensor +  "'" + 
+                " and property = '" + ozellik + "'" + 
+                " and numericValue " + operator + " " + deger;
+
+            var kural = new ASUACEPSDK.StatementSummary();
+            kural.epl = kuralCumlesi;
+            kural.name = kuralAdi;
+            kural.isStarted = true;
+
+            StatementsApi.createStatement(kural, function (error, data, response) {
+                if (error) {
+                    console.log(error);
+                    console.log("Kural oluşturulamadı");
+                    return;
+                }
+                //Abone ol butonu aktifleştirildi
+                $("#aboneOl").attr("disabled", false);
+            })
+        })
+
+        $("#aboneOl").on("click", function () {
+            //abone olunacak kuralın adı
+            var kuralAdi = $("#kuralAdi").val();
+            var mailAdresi = $("#mailAdresi").val();
+
+            //mail aboneliği detayları
+            var mailAboneligi = new ASUACEPSDK.MailSubscription();
+            mailAboneligi.mailAddress = mailAdresi;//mail adresi
+            mailAboneligi.message = kuralAdi + " kurali tetiklendi!";//mail içeriği, html içerik destekler
+            mailAboneligi.isStarted = true;//aboneliğin hemen başlaması için true olmalidir. 
+
+            //Mail aboneliği oluşturma
+            SubscriptionApi.createMailSubscription(kuralAdi, mailAboneligi, function (error, data, response) {
+                if (error) {
+                    console.log(error);
+                    console.log("Mail aboneliği oluşturulamadı");
+                    return;
+                }
+
+                console.log("Abonelik oluşturuldu. Abonelik id : " + data.key);
+
+                $("#aboneOl").attr("disabled", true);
+            })
+        })
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>SensorData API ile ASUA platformuna veri gönderme</title>
+    <script src="http://netigma.netcad.com.tr/SWE/ModulData/Component/SWE/js/ASUASENSORDATASDK.js" type="text/javascript"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js" type="text/javascript"></script>
+</head>
+
+<body>
+    <h4>SensorData API ile sensör listesine erişme</h4>
+    <div>
+        Sensorlerim :
+        <select id="sensor_kimlikleri"></select>
+    </div>
+
+    <button id="yukleButonu">Yükle</button>
+
+    <script>
+
+        var apiClient = new ASUASENSORDATASDK.ApiClient();
+
+        apiClient.basePath = "http://netigma.netcad.com.tr/sdrest";
+        apiClient.authentications.Authorization.apiKey = "YOUR_API_KEY";
+
+        var procedureApi = new ASUASENSORDATASDK.ProcedureApi(apiClient)
+
+        $("#yukleButonu").on("click", function () {
+
+
+            procedureApi.getAllProcedures(function (error, data, response) {
+                if (error) {
+                    console.log(error)
+                    return console.log("Sensör listesi yüklenemedi!")
+                }
+
+                for (var i = 0;  i < data.length; i++) {
+                    console.log(data[i]);
+
+                    $("#sensor_kimlikleri").append("<option>" + data[i].identifier + "</option>");
+
+                    $("#yukleButonu").attr("disabled", true);
+                }
+            })
+        })
+
+    </script>
+</body>
+
+</html>

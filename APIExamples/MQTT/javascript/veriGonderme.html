@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>MQTT ile ASUA platformuna veri gönderme</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js" type="text/javascript"></script>
+</head>
+
+<body>
+    <h4>MQTT ile ASUA platformuna veri gönderme</h4>
+    <div>
+        Sensor Kimliği :
+        <select id="sensor_kimligi">
+            <option value="Sensor_1">Sensor_1</option>
+            <option value="Sensor_2">Sensor_2</option>
+            <option value="Sensor_3">Sensor_3</option>
+            <option value="Sensor_4">Sensor_4</option>
+        </select>
+    </div>
+    <div>
+        Ölçülen Özellik :
+        <select id="ozellik_adi">
+            <option value="Sicaklik">Sicaklik</option>
+            <option value="Nem">Nem</option>
+            <option value="AracSayisi">AracSayisi</option>
+            <option value="KisiSayisi">KisiSayisi</option>
+        </select>
+    </div>
+    <div>
+        Gönderilecek değer :
+        <input type="number" id="deger">
+    </div>
+    <button id="gonderButonu">Gonder</button>
+
+    <script>
+        $("#gonderButonu").on("click", function () {
+            var sensor = $("#sensor_kimligi").val();
+            var ozellik = $("#ozellik_adi").val();
+            var deger = $("#deger").val();
+
+            var now = new Date();
+
+            // gonderilecek veri
+            var data = {
+                value: deger,
+                resultTime: now.toISOString()
+            }
+
+            message = new Paho.MQTT.Message(JSON.stringify(data));
+
+            //Önemli : mqtt topic değeri oluşturulurken en başta "asua" daha sonra sırayla sensör kimliği ve ölçülen özelliğin adi yazılır.
+            message.destinationName = "asua/" + sensor + "/" + ozellik; //mqtt topic adi
+            mqtt_client.send(message);
+        })
+
+        //mqtt client bağlantısı açılıyor
+        var clientId = "wsclient_" + Date.now();
+        var mqtt_client = new Paho.MQTT.Client("netigma.netcad.com.tr", 61614, clientId);
+
+        mqtt_client.onConnectionLost = function (responseObject) {
+            console.log("onConnectionLost:" + responseObject.errorMessage);
+        };
+
+        mqtt_client.connect({
+            onSuccess: function () {
+                console.log("Connected!");
+            },
+            onFailure: function (msg) {
+                console.log("Can not connected!");
+            },
+            userName: "ws2017user2",
+            password: "9HkUA7wB"
+        });
+
+    </script>
+</body>
+
+</html>
